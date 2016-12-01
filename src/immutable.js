@@ -24,6 +24,8 @@ export const {
   focus,
   formValueSelector,
   getFormValues,
+  getFormSyncErrors,
+  getFormSubmitErrors,
   initialize,
   isDirty,
   isInvalid,
