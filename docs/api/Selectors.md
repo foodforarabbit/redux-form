@@ -13,22 +13,30 @@ form, and create a selector for whatever form state the selector is for.
 import {
   getFormValues,
   getFormSyncErrors,
+  getFormAsyncErrors,
   getFormSubmitErrors,
   isDirty,
   isPristine,
   isValid,
-  isInvalid
+  isInvalid,
+  isSubmitting,
+  hasSubmitSucceeded,
+  hasSubmitFailed
 } from 'redux-form'
 
 MyComponent = connect(
   state => ({
     values: getFormValues('myForm')(state),
     syncErrors: getFormSyncErrors('myForm')(state),
+    asyncErrors: getFormAsyncErrors('myForm')(state),
     submitErrors: getFormSubmitErrors('myForm')(state),
     dirty: isDirty('myForm')(state),
     pristine: isPristine('myForm')(state),
     valid: isValid('myForm')(state),
-    invalid: isInvalid('myForm')(state)
+    invalid: isInvalid('myForm')(state),
+    submitting: isSubmitting('myForm')(state),
+    submitSucceeded: hasSubmitSucceeded('myForm')(state),
+    submitFailed: hasSubmitFailed('myForm')(state)
   })
 )(MyComponent)
 ```
@@ -42,6 +50,10 @@ MyComponent = connect(
 ### `getFormSyncErrors(formName:String)` returns `(state) => formSyncErrors:Object`
 
 > Returns the form synchronous validation errors.
+
+### `getFormAsyncErrors(formName:String)` returns `(state) => formAsyncErrors:Object`
+
+> Returns the form asynchronous validation errors.
 
 ### `getFormSubmitErrors(formName:String)` returns `(state) => formSubmitErrors:Object`
 
@@ -66,3 +78,15 @@ of `isInvalid`.
 
 > Returns `true` if the form is invalid, i.e. has sync, async, or submission errors. The opposite
 of `isValid`.
+
+### `isSubmitting(formName:String)` returns `(state) => submitting:boolean`
+
+> Returns `true` if the form is submitting.
+
+### `hasSubmitSucceeded(formName:String)` returns `(state) => submitSucceeded:boolean`
+
+> Returns `true` if the form has previously been successfully submitted.
+
+### `hasSubmitFailed(formName:String)` returns `(state) => submitFailed:boolean`
+
+> Returns `true` if the form has previously failed to submit.

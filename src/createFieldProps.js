@@ -1,10 +1,3 @@
-import createOnBlur from './events/createOnBlur'
-import createOnChange from './events/createOnChange'
-import createOnDragStart from './events/createOnDragStart'
-import createOnDrop from './events/createOnDrop'
-import createOnFocus from './events/createOnFocus'
-import { noop } from 'lodash'
-
 const processProps = (type, props, _value) => {
   const { value } = props
   if (type === 'checkbox') {
@@ -35,39 +28,58 @@ const processProps = (type, props, _value) => {
   return props
 }
 
-const createFieldProps = (getIn, name,
+const createFieldProps = ({ getIn, toJS }, name,
   {
-    asyncError, asyncValidating, blur, change, dirty, dispatch, focus, format,
-    normalize, parse, pristine, props, state, submitError, submitting, value,
-    _value, syncError, syncWarning, ...custom
-  }, asyncValidate = noop) => {
+    asyncError,
+    asyncValidating,
+    onBlur,
+    onChange,
+    onDrop,
+    onDragStart,
+    dirty,
+    dispatch,
+    onFocus,
+    format,
+    parse,  // eslint-disable-line no-unused-vars
+    pristine,
+    props,
+    state,
+    submitError,
+    submitFailed,
+    submitting,
+    syncError,
+    syncWarning,
+    validate,  // eslint-disable-line no-unused-vars
+    value,
+    _value,
+    warn,  // eslint-disable-line no-unused-vars
+    ...custom
+  }) => {
   const error = syncError || asyncError || submitError
   const warning = syncWarning
-  const boundParse = parse && (value => parse(value, name))
-  const boundNormalize = normalize && (value => normalize(name, value))
-  const boundChange = value => dispatch(change(name, value))
-  const onChange = createOnChange(boundChange, {
-    normalize: boundNormalize,
-    parse: boundParse
-  })
-  const fieldValue = value == null ? '' : value
+
+  const formatFieldValue = (value, format) => {
+    if (format === null) {
+      return value
+    }
+    const defaultFormattedValue = value == null ? '' : value
+    return format ? format(value, name) : defaultFormattedValue
+  }
+
+  const formattedFieldValue = formatFieldValue(value, format)
 
   return {
     input: processProps(custom.type, {
       name,
-      onBlur: createOnBlur(value => dispatch(blur(name, value)), {
-        normalize: boundNormalize,
-        parse: boundParse,
-        after: asyncValidate.bind(null, name)
-      }),
+      onBlur,
       onChange,
-      onDragStart: createOnDragStart(name, fieldValue),
-      onDrop: createOnDrop(name, boundChange),
-      onFocus: createOnFocus(name, () => dispatch(focus(name))),
-      value: format ? format(fieldValue, name) : fieldValue
+      onDragStart,
+      onDrop,
+      onFocus,
+      value: formattedFieldValue
     }, _value),
     meta: {
-      ...state,
+      ...toJS(state),
       active: !!(state && getIn(state, 'active')),
       asyncValidating,
       autofilled: !!(state && getIn(state, 'autofilled')),
@@ -78,6 +90,7 @@ const createFieldProps = (getIn, name,
       invalid: !!error,
       pristine,
       submitting: !!submitting,
+      submitFailed: !!submitFailed,
       touched: !!(state && getIn(state, 'touched')),
       valid: !error,
       visited: !!(state && getIn(state, 'visited'))

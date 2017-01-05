@@ -5,11 +5,12 @@ import shallowCompare from './util/shallowCompare'
 import prefixName from './util/prefixName'
 
 
-const createField = ({ deepEqual, getIn, setIn }) => {
+const createField = ({ deepEqual, getIn, setIn, toJS }) => {
 
   const ConnectedField = createConnectedField({
     deepEqual,
-    getIn
+    getIn,
+    toJS
   })
 
   class Field extends Component {
@@ -27,7 +28,12 @@ const createField = ({ deepEqual, getIn, setIn }) => {
     }
 
     componentWillMount() {
-      this.context._reduxForm.register(this.name, 'Field')
+      this.context._reduxForm.register(
+        this.name,
+        'Field',
+        () => this.props.validate,
+        () => this.props.warn
+      )
     }
 
     componentWillReceiveProps(nextProps) {
@@ -98,6 +104,11 @@ const createField = ({ deepEqual, getIn, setIn }) => {
     component: PropTypes.oneOfType([ PropTypes.func, PropTypes.string ]).isRequired,
     format: PropTypes.func,
     normalize: PropTypes.func,
+    onBlur: PropTypes.func,
+    onChange: PropTypes.func,
+    onFocus: PropTypes.func,
+    onDragStart: PropTypes.func,
+    onDrop: PropTypes.func,
     parse: PropTypes.func,
     props: PropTypes.object
   }

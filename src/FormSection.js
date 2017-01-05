@@ -1,4 +1,4 @@
-import React, { Component, PropTypes } from 'react'
+import React, { createElement, Component, PropTypes } from 'react'
 import prefixName from './util/prefixName'
 
 class FormSection extends Component {
@@ -20,12 +20,31 @@ class FormSection extends Component {
   }
 
   render() {
-    return <div>{this.props.children}</div>
+    const {
+      children,
+      name, // eslint-disable-line no-unused-vars
+      component,
+      ...rest
+    } = this.props
+
+    if (React.isValidElement(children)) {
+      return children
+    }
+
+    return createElement(component, {
+      ...rest,
+      children
+    })
   }
 }
 
 FormSection.propTypes = {
-  name: PropTypes.string.isRequired
+  name: PropTypes.string.isRequired,
+  component: PropTypes.oneOfType([ PropTypes.func, PropTypes.string ])
+}
+
+FormSection.defaultProps = {
+  component: 'div'
 }
 
 FormSection.childContextTypes = {

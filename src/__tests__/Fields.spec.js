@@ -229,6 +229,19 @@ const describeFields = (name, structure, combineReducers, expect) => {
       expect(props.foo.meta.error).toBe('foo error')
     })
 
+    it('should get submitFailed prop from Redux state', () => {
+      const props = testProps({
+        initial: {
+          foo: 'bar'
+        },
+        values: {
+          foo: 'bar'
+        },
+        submitFailed: true
+      })
+      expect(props.foo.meta.submitFailed).toBe(true)
+    })
+
     it('should provide names getter', () => {
       const store = makeStore({
         testForm: {
@@ -668,10 +681,14 @@ const describeFields = (name, structure, combineReducers, expect) => {
 
     it('should prefix name when inside FormSection', () => {
       const store = makeStore()
+      const renderFields = ({ foo, bar }) => <div>
+        <input {...foo.input}/>
+        <input {...bar.input}/>
+      </div>
       class Form extends Component {
         render() {
           return (<FormSection name="foo">
-            <Fields names={[ 'foo', 'bar' ]} component="input"/>
+            <Fields names={[ 'foo', 'bar' ]} component={renderFields}/>
           </FormSection>)
         }
       }
@@ -696,11 +713,15 @@ const describeFields = (name, structure, combineReducers, expect) => {
 
     it('should prefix name when inside multiple FormSections', () => {
       const store = makeStore()
+      const renderFields = ({ foo, bar }) => <div>
+        <input {...foo.input}/>
+        <input {...bar.input}/>
+      </div>
       class Form extends Component {
         render() {
           return (<FormSection name="foo">
             <FormSection name="fighter">
-              <Fields names={[ 'foo', 'bar' ]} component="input"/>
+              <Fields names={[ 'foo', 'bar' ]} component={renderFields}/>
             </FormSection>
           </FormSection>)
         }
@@ -967,6 +988,40 @@ const describeFields = (name, structure, combineReducers, expect) => {
       expect(input.calls[ 1 ].arguments[ 0 ].name.input.value).toBe('redux form rocks')
     })
 
+    it('should handle on focus', () => {
+      const store = makeStore({
+        testForm: {
+          values: {
+            name: 'redux form'
+          }
+        }
+      })
+      const input = createSpy(props => <input {...props.input}/>).andCallThrough()
+      class Form extends Component {
+        render() {
+          return (
+            <div>
+              <Fields names={[ 'name' ]} component={input}/>
+            </div>
+          )
+        }
+      }
+      const TestForm = reduxForm({ form: 'testForm' })(Form)
+      TestUtils.renderIntoDocument(
+        <Provider store={store}>
+          <TestForm/>
+        </Provider>
+      )
+
+      expect(input.calls.length).toBe(1)
+      expect(input.calls[ 0 ].arguments[ 0 ].name.meta.visited).toBe(false)
+
+      input.calls[ 0 ].arguments[ 0 ].name.input.onFocus()
+
+      expect(input.calls.length).toBe(2)
+      expect(input.calls[ 1 ].arguments[ 0 ].name.meta.visited).toBe(true)
+    })
+
     it('should parse and format to maintain different type in store', () => {
       const store = makeStore({
         testForm: {
@@ -1126,12 +1181,12 @@ const describeFields = (name, structure, combineReducers, expect) => {
       // update username field so it passes
       usernameInput.calls[ 0 ].arguments[ 0 ].username.input.onChange('erikras')
 
-      // username input rerendered twice, once for value, once for sync error
-      expect(usernameInput.calls.length).toBe(3)
+      // username input rerendered
+      expect(usernameInput.calls.length).toBe(2)
 
       // should be valid now
-      expect(usernameInput.calls[ 2 ].arguments[ 0 ].username.meta.valid).toBe(true)
-      expect(usernameInput.calls[ 2 ].arguments[ 0 ].username.meta.error).toBe(undefined)
+      expect(usernameInput.calls[ 1 ].arguments[ 0 ].username.meta.valid).toBe(true)
+      expect(usernameInput.calls[ 1 ].arguments[ 0 ].username.meta.error).toBe(undefined)
     })
 
     it('should rerender when sync warning changes', () => {
@@ -1222,11 +1277,11 @@ const describeFields = (name, structure, combineReducers, expect) => {
       // update username field so it passes
       usernameInput.calls[ 0 ].arguments[ 0 ].username.input.onChange('erikras')
 
-      // username input rerendered twice, once for value, once for sync warning
-      expect(usernameInput.calls.length).toBe(3)
+      // username input rerendered
+      expect(usernameInput.calls.length).toBe(2)
 
       // should be valid now
-      expect(usernameInput.calls[ 2 ].arguments[ 0 ].username.meta.warning).toBe(undefined)
+      expect(usernameInput.calls[ 1 ].arguments[ 0 ].username.meta.warning).toBe(undefined)
     })
 
     it('should provide correct prop structure', () => {

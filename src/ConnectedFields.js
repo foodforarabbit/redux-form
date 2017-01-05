@@ -2,12 +2,13 @@ import { Component, PropTypes, createElement } from 'react'
 import { connect } from 'react-redux'
 import createFieldProps from './createFieldProps'
 import plain from './structure/plain'
+import onChangeValue from './events/onChangeValue'
 
 const propsToNotUpdateFor = [
   '_reduxForm'
 ]
 
-const createConnectedFields = ({ deepEqual, getIn }) => {
+const createConnectedFields = ({ deepEqual, getIn, toJS }) => {
 
   const getSyncError = (syncErrors, name) => {
     const error = plain.getIn(syncErrors, name)
@@ -24,6 +25,26 @@ const createConnectedFields = ({ deepEqual, getIn }) => {
   }
 
   class ConnectedFields extends Component {
+    constructor(props) {
+      super(props)
+
+      this.handleChange = this.handleChange.bind(this)
+      this.handleFocus = this.handleFocus.bind(this)
+      this.handleBlur = this.handleBlur.bind(this)
+
+      this.onChangeFns = Object.keys(props._fields).reduce((acc, name) => ({
+        ...acc, [name]: event => this.handleChange(name, event)
+      }), {})
+
+      this.onFocusFns = Object.keys(props._fields).reduce((acc, name) => ({
+        ...acc, [name]: () => this.handleFocus(name)
+      }), {})
+
+      this.onBlurFns = Object.keys(props._fields).reduce((acc, name) => ({
+        ...acc, [name]: event => this.handleBlur(name, event)
+      }), {})
+    }
+
     shouldComponentUpdate(nextProps) {
       const nextPropsKeys = Object.keys(nextProps)
       const thisPropsKeys = Object.keys(this.props)
@@ -47,24 +68,49 @@ const createConnectedFields = ({ deepEqual, getIn }) => {
       return this.refs.renderedComponent
     }
 
+    handleChange(name, event) {
+      const { dispatch, parse, normalize, _reduxForm } = this.props
+      const value = onChangeValue(event, { name, parse, normalize })
+
+      dispatch(_reduxForm.change(name, value))
+    }
+
+    handleFocus(name) {
+      const { dispatch, _reduxForm } = this.props
+      dispatch(_reduxForm.focus(name))
+    }
+
+    handleBlur(name, event) {
+      const { dispatch, parse, normalize, _reduxForm } = this.props
+      const value = onChangeValue(event, { name, parse, normalize })
+
+      // dispatch blur action
+      dispatch(_reduxForm.blur(name, value))
+
+      // call post-blur callback
+      if (_reduxForm.asyncValidate) {
+        _reduxForm.asyncValidate(name, value)
+      }
+    }
+
     render() {
       const { component, withRef, _fields, _reduxForm, ...rest } = this.props
-      const { asyncValidate, blur, change, focus } = _reduxForm
+      const { sectionPrefix } = _reduxForm
       const { custom, ...props } = Object.keys(_fields).reduce((accumulator, name) => {
         const connectedProps = _fields[ name ]
-        const { custom, ...fieldProps } = createFieldProps(getIn,
+        const { custom, ...fieldProps } = createFieldProps({ getIn, toJS },
           name,
           {
             ...connectedProps,
             ...rest,
-            blur,
-            change,
-            focus
-          },
-          asyncValidate
+            onBlur: this.onBlurFns[name],
+            onChange: this.onChangeFns[name],
+            onFocus: this.onFocusFns[name]
+          }
         )
         accumulator.custom = custom
-        return plain.setIn(accumulator, name, fieldProps)
+        const fieldName = sectionPrefix ? name.replace(`${sectionPrefix}.`, '') : name
+        return plain.setIn(accumulator, fieldName, fieldProps)
       }, {})
       if (withRef) {
         props.ref = 'renderedComponent'
@@ -100,6 +146,7 @@ const createConnectedFields = ({ deepEqual, getIn }) => {
             pristine,
             state: getIn(formState, `fields.${name}`),
             submitError: getIn(formState, `submitErrors.${name}`),
+            submitFailed: getIn(formState, 'submitFailed'),
             submitting,
             syncError,
             syncWarning,
