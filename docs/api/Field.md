@@ -33,6 +33,9 @@ A string path, in dot-and-bracket notation, corresponding to a value in the form
 be as simple as `'firstName'` or as complicated as
 `contact.billing.address[2].phones[1].areaCode`. See the [Usage](#usage) section below for details.
 
+Numeric field names, e.g. `name="42"` or `name="foo.5.email`, are not supported, as they can
+be confused for array indexes.
+
 #### `component : Component|Function|String` [required]
 
 A `Component`, stateless function, or string corresponding to a default JSX element.
@@ -324,6 +327,10 @@ tracking for you.
 
 > The error for this field if its value is not passing validation. Both synchronous,
 > asynchronous, and submit validation errors will be reported here.
+
+#### `meta.form : String`
+
+> The name of the `form`. Could be useful if you want to manually dispatch actions.
 
 #### `meta.invalid : boolean`
 
