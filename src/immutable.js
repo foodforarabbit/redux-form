@@ -48,6 +48,7 @@ export const {
   submit,
   SubmissionError,
   touch,
+  unregisterField,
   untouch,
   values
 } = createAll(immutable)
